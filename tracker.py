@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-from resnet import Resnet18
+from resnet import NNfeatures
 import cv2
 import matplotlib.pyplot as plt
 from sklearn.kernel_ridge import KernelRidge
@@ -8,9 +8,17 @@ from sklearn.decomposition import PCA
 
 
 class MyTracker():
-    def __init__(self):
+    def __init__(self, model_name='resnet18'):
         self.a=1
-        self.Resnet = Resnet18()
+        if model_name == 'resnet18':
+            self.Resnet = NNfeatures('resnet18')
+        if model_name == 'resnet34':
+            self.Resnet = NNfeatures('resnet34')
+        if model_name == 'resnet50':
+            self.Resnet = NNfeatures('resnet18')
+        if model_name == 'resnet101':
+            self.Resnet = NNfeatures('resnet101')
+        self.krrs = []
         
 
     def init(self, image, roi):
@@ -21,8 +29,8 @@ class MyTracker():
         self.frame = self.Resnet.get_frame_feature([sub_image])[0]
 
         target = self.gaussian_peak(w,h)
-        sum = np.max(target)
-        target = target/sum
+        summation = np.max(target)
+        target = target/summation
 
         self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy)
         for i in range(len(self.train_x)):
@@ -42,8 +50,12 @@ class MyTracker():
         # RFC = self.Resnet.get_feature2(train_x) #(36*256*14*14)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
-        self.krr = KernelRidge(alpha=1.0)
-        self.krr.fit(RFC, np.array(self.train_y))
+        krr = KernelRidge(alpha=1.0)
+        self.krrs.append(krr)
+        self.krrs[-1].fit(RFC, np.array(self.train_y))
+        
+        if len(self.krrs) > 4:
+            self.krrs = self.krrs[1:]
         self.roi = roi
 
     def in_roi(self,point,roi):
@@ -126,7 +138,10 @@ class MyTracker():
         # RFC = np.array(RFC)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
-        result = self.krr.predict(RFC)
+        result = self.krrs[0].predict(RFC)
+        result = np.array(result)
+        for k in range(1, len(self.krrs)):
+            result = 1/9 * result + self.krrs[k].predict(RFC)
         index = np.argmax(result)
         self.roi = roi_set[index]
         

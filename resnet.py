@@ -3,9 +3,16 @@ import torchvision
 from torchvision import transforms
 import numpy as np
 
-class Resnet18():
-    def __init__(self) -> None:
-        self.m = torchvision.models.resnet18(pretrained=True)
+class NNfeatures():
+    def __init__(self, model_name) -> None:
+        if model_name == 'resnet18':
+            self.m = torchvision.models.resnet18(pretrained=True)
+        if model_name == 'resnet34':
+            self.m = torchvision.models.resnet34(pretrained=True)
+        if model_name == 'resnet50':
+            self.m = torchvision.models.resnet50(pretrained=True)
+        if model_name == 'resnet101':
+            self.m = torchvision.models.resnet101(pretrained=True)
         self.layer4 = torchvision.models._utils.IntermediateLayerGetter(self.m,{'layer3': 'feat2'})
         self.preprocess = transforms.Compose([
             transforms.Resize(256),
