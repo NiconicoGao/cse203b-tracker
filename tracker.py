@@ -1,6 +1,6 @@
 import numpy as np
 from PIL import Image
-from resnet import NNfeatures
+from NNfeatures import NNfeatures
 import cv2
 import matplotlib.pyplot as plt
 from sklearn.kernel_ridge import KernelRidge
