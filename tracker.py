@@ -3,7 +3,7 @@ from PIL import Image
 from NNfeatures import NNfeatures
 import cv2
 import matplotlib.pyplot as plt
-from sklearn.kernel_ridge import KernelRidge
+from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 
 
@@ -15,10 +15,10 @@ class MyTracker():
         if model_name == 'resnet34':
             self.Resnet = NNfeatures('resnet34')
         if model_name == 'resnet50':
-            self.Resnet = NNfeatures('resnet18')
+            self.Resnet = NNfeatures('resnet50')
         if model_name == 'resnet101':
             self.Resnet = NNfeatures('resnet101')
-        self.krrs = []
+        self.svrs = []
         
 
     def init(self, image, roi):
@@ -50,12 +50,12 @@ class MyTracker():
         # RFC = self.Resnet.get_feature2(train_x) #(36*256*14*14)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
-        krr = KernelRidge(alpha=1.0)
-        self.krrs.append(krr)
-        self.krrs[-1].fit(RFC, np.array(self.train_y))
+        svr = SVR(C=1, epsilon=0.2)
+        self.svrs.append(svr)
+        self.svrs[-1].fit(RFC, np.array(self.train_y))
         
-        if len(self.krrs) > 4:
-            self.krrs = self.krrs[1:]
+        if len(self.svrs) > 4:
+            self.svrs = self.svrs[1:]
         self.roi = roi
 
     def in_roi(self,point,roi):
@@ -120,13 +120,14 @@ class MyTracker():
 
     def update(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
         x1, y1, w, h = self.roi
         cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1.5)
-        scale = [(0.85,0.85),(1,1),(1.05,1.05)]
+        scale = [(0.85,0.85), (1,1),  (1.05, 1.05)]
         test_x = []
         roi_set = []
         for s in scale:
-            for i in range(15):
+            for i in range(50):
                 th,tw = int(h*s[0]),int(w*s[1])
                 n_x1 = self.gaussion_random(x1,tw/6)
                 n_y1 = self.gaussion_random(y1,th/6)
@@ -138,14 +139,13 @@ class MyTracker():
         # RFC = np.array(RFC)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
-        result = self.krrs[0].predict(RFC)
+        result = self.svrs[-1].predict(RFC)
         result = np.array(result)
-        for k in range(1, len(self.krrs)):
-            result = 1/9 * result + self.krrs[k].predict(RFC)
+        for k in range(2, len(self.svrs)+1):
+            result = 1/9 * result + self.svrs[-k].predict(RFC)
         index = np.argmax(result)
         self.roi = roi_set[index]
         
-
         return self.roi
 
     def gaussian_peak(self, w, h):

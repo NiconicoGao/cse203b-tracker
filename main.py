@@ -8,7 +8,7 @@ if __name__ == '__main__':
                     help='Which feature is gonna use')
     args = parser.parse_args()
     cap = cv2.VideoCapture("./car.avi")
-    tracker = MyTracker(model_name = args.feature)
+    tracker = MyTracker()
     ok, frame = cap.read()
     if not ok:
         print("error reading video")
@@ -16,6 +16,7 @@ if __name__ == '__main__':
     #roi = cv2.selectROI("tracking", frame, False, False)
     roi = (218, 302, 148, 108)
     tracker.init(frame, roi)
+    count = 0
     while cap.isOpened():
         ok, frame = cap.read()
         if not ok:
@@ -26,6 +27,11 @@ if __name__ == '__main__':
         c = cv2.waitKey(1) & 0xFF
         if c==27 or c==ord('q'):
             break
+        if count >= 4:
+            tracker.init(frame, [x, y, w, h])
+            count = 0
+        count += 1
+
     cap.release()
     cv2.destroyAllWindows()
 
