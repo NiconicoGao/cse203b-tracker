@@ -139,10 +139,10 @@ class MyTracker():
         # RFC = np.array(RFC)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
-        result = self.svrs[-1].predict(RFC)
+        result = self.svrs[0].predict(RFC)
         result = np.array(result)
-        for k in range(2, len(self.svrs)+1):
-            result = 1/9 * result + self.svrs[-k].predict(RFC)
+        for k in range(1, len(self.svrs)):
+            result = 8/9 * result + self.svrs[k].predict(RFC)
         index = np.argmax(result)
         self.roi = roi_set[index]
         
