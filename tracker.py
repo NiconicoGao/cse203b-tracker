@@ -12,12 +12,6 @@ class MyTracker():
         self.a=1
         if model_name == 'resnet18':
             self.Resnet = NNfeatures('resnet18')
-        if model_name == 'resnet34':
-            self.Resnet = NNfeatures('resnet34')
-        if model_name == 'resnet50':
-            self.Resnet = NNfeatures('resnet50')
-        if model_name == 'resnet101':
-            self.Resnet = NNfeatures('resnet101')
         self.svrs = []
         
 
