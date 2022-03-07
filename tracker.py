@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 from resnet import Resnet18
+from hog import HOG
 import cv2
 import matplotlib.pyplot as plt
 from sklearn.kernel_ridge import KernelRidge
@@ -9,22 +10,23 @@ from sklearn.decomposition import PCA
 
 class MyTracker():
     def __init__(self):
-        self.a=1
         self.Resnet = Resnet18()
+        self.Hog = HOG()
+        self.feature = self.Hog
         
 
     def init(self, image, roi):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_h,image_w,_ = image.shape
         x1, y1, w, h = roi
-        cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1.5)
-        self.frame = self.Resnet.get_frame_feature([sub_image])[0]
+        cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1)
+        self.frame = self.feature.get_frame_feature([sub_image])[0]
 
         target = self.gaussian_peak(w,h)
         sum = np.max(target)
         target = target/sum
 
-        self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy)
+        self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy,num=1000)
         for i in range(len(self.train_x)):
             gx = np.random.randint(0,image_w*0.7)+image_w*0.15
             gy = np.random.randint(0,image_h*0.7)+image_h*0.15
@@ -33,12 +35,13 @@ class MyTracker():
                 _,_,neg = self.get_sub_image(image,gx,gy,w,h)
                 self.train_x.append(neg)
                 self.train_y.append(0)
+                debug.append((gx,gy,w,h))
         # plt.imshow(target, cmap='hot', interpolation='nearest')
         # plt.show()
         
         # plt.imshow(train_x[0])
         # plt.show()
-        RFC = self.Resnet.get_feature(self.train_x,self.frame) #(36*256*14*14)
+        RFC = self.feature.get_feature(self.train_x,self.frame) #(36*256*14*14)
         # RFC = self.Resnet.get_feature2(train_x) #(36*256*14*14)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
@@ -109,12 +112,11 @@ class MyTracker():
     def update(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         x1, y1, w, h = self.roi
-        cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1.5)
         scale = [(0.85,0.85),(1,1),(1.05,1.05)]
         test_x = []
         roi_set = []
         for s in scale:
-            for i in range(15):
+            for i in range(45):
                 th,tw = int(h*s[0]),int(w*s[1])
                 n_x1 = self.gaussion_random(x1,tw/6)
                 n_y1 = self.gaussion_random(y1,th/6)
@@ -122,7 +124,7 @@ class MyTracker():
                 test_x.append(sub_image)
                 roi_set.append((n_x1,n_y1,tw,th))
 
-        RFC = self.Resnet.get_feature(test_x,self.frame) #(36*256*14*14)
+        RFC = self.feature.get_feature(test_x,self.frame) #(36*256*14*14)
         # RFC = np.array(RFC)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)

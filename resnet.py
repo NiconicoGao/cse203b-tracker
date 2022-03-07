@@ -6,7 +6,7 @@ import numpy as np
 class Resnet18():
     def __init__(self) -> None:
         self.m = torchvision.models.resnet18(pretrained=True)
-        self.layer4 = torchvision.models._utils.IntermediateLayerGetter(self.m,{'layer3': 'feat2'})
+        self.layer4 = torchvision.models._utils.IntermediateLayerGetter(self.m,{'layer1': 'feat2'})
         self.preprocess = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -55,4 +55,8 @@ class Resnet18():
     def RFC_feature(self,image_list,target):
         distance = [torch.sub(image,target).pow(2).sqrt() for image in image_list]
         return [torch.sum(t,(1,2)).numpy() for t in distance]
+
+    def RFC_feature2(self,image_list,target):
+        distance = [torch.sum(torch.sub(image,target).pow(2),(1,2)).sqrt().numpy() for image in image_list]
+        return distance
         
