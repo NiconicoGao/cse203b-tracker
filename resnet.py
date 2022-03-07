@@ -23,7 +23,7 @@ class Resnet18():
         out = self.layer4(image)['feat2']
         out = torch.chunk(out,out.shape[0],0)
         out = [torch.squeeze(image) for image in out]
-        RFC = self.RFC_feature(out,target)
+        RFC = self.RFC_feature2(out,target)
         RFC = np.array(RFC)
         return RFC
 
@@ -57,6 +57,6 @@ class Resnet18():
         return [torch.sum(t,(1,2)).numpy() for t in distance]
 
     def RFC_feature2(self,image_list,target):
-        distance = [torch.sum(torch.sub(image,target).pow(2),(1,2)).sqrt().numpy() for image in image_list]
+        distance = [torch.sum(torch.mul(image,target),(1,2)).numpy() for image in image_list]
         return distance
         

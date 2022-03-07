@@ -79,30 +79,39 @@ class MyTracker():
         s = np.random.random(1)-0.5
         return s.item(0)*len
 
+    def get_range(self,len,num):
+        start = -len//2
+        end = len//2
+        step = len//num if len//num!=0 else 1
+        return range(start,end+1,step)
+
+
     def get_train_data(self,image,target,w,h,cx,cy,num=36):
         train_x = []
         train_y = []
         debug = []
         image_h,image_w,_= image.shape
-        for i in range(num):
-            dx = self.get_random(min(w,cx,image_w-cx))
-            dy = self.get_random(min(h,cy,image_h-cy))
-            tx = cx + dx
-            ty = cy + dy
-            x = int(tx - w // 2) if int(tx - w // 2)>=0 else 0
-            y = int(ty - h // 2) if int(ty - h // 2)>=0 else 0
-            
+        for dx in self.get_range(min(w,cx,image_w-cx),int(np.floor(np.sqrt(num)).item(0))):
+            for dy in self.get_range(min(h,cy,image_h-cy),int(np.floor(np.sqrt(num)).item(0))):
+        # for i in range(num):
+        #     dx = self.get_random(min(w,cx,image_w-cx))
+        #     dy = self.get_random(min(h,cy,image_h-cy))
+                tx = cx + dx
+                ty = cy + dy
+                x = int(tx - w // 2) if int(tx - w // 2)>=0 else 0
+                y = int(ty - h // 2) if int(ty - h // 2)>=0 else 0
+                
 
-            sub_image = image[y:y+h, x:x+w, :]
-            train_image = cv2.resize(sub_image, (w, h))
-            
+                sub_image = image[y:y+h, x:x+w, :]
+                train_image = cv2.resize(sub_image, (w, h))
+                
 
-            target_h,target_w = target.shape
-            target_x,target_y = int(target_w/2+dx),int(target_h//2+dy)
-            if 0 <= target_x < target_w and 0 <= target_y < target_h:
-                train_y.append(target[target_y][target_x])
-                train_x.append(train_image)
-                debug.append((dx,dy,cx,cy))
+                target_h,target_w = target.shape
+                target_x,target_y = int(target_w/2+dx),int(target_h//2+dy)
+                if 0 <= target_x < target_w and 0 <= target_y < target_h:
+                    train_y.append(target[target_y][target_x])
+                    train_x.append(train_image)
+                    debug.append((dx,dy,cx,cy))
 
         train_x = [Image.fromarray(image) for image in train_x]
 
@@ -112,11 +121,11 @@ class MyTracker():
     def update(self, image):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         x1, y1, w, h = self.roi
-        scale = [(0.85,0.85),(1,1),(1.05,1.05)]
+        scale = [(0.85,0.85),(0.95,0.95),(1,1),(1.05,1.05)]
         test_x = []
         roi_set = []
         for s in scale:
-            for i in range(45):
+            for i in range(25):
                 th,tw = int(h*s[0]),int(w*s[1])
                 n_x1 = self.gaussion_random(x1,tw/6)
                 n_y1 = self.gaussion_random(y1,th/6)
