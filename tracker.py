@@ -26,7 +26,7 @@ class MyTracker():
         sum = np.max(target)
         target = target/sum
 
-        self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy,num=1000)
+        self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy,num=100)
         for i in range(len(self.train_x)):
             gx = np.random.randint(0,image_w*0.7)+image_w*0.15
             gy = np.random.randint(0,image_h*0.7)+image_h*0.15

@@ -28,7 +28,11 @@ class HOG():
         h = h // sh - 1
         return [hist.reshape(w, h, 36).transpose(2, 1, 0)] #36*36*64
 
-    
+    def normalize(n):
+        max_val = np.max(n,axis=0).reshape(1,-1)
+        min_val = np.min(n,axis=0).reshape(1,-1)
+        return (n-min_val)/(max_val-min_val)
+
     def get_feature(self,image_list,target):
         final = []
         for image in image_list:
@@ -40,15 +44,26 @@ class HOG():
             sw, sh = self.blockStride
             w = w // sw - 1
             h = h // sh - 1
-            feature = hist.reshape(w, h, 36).transpose(2, 1, 0)
-            dist = np.abs(feature - target)
-            dist = feature
-            rfc = np.sum(dist,axis=(1,2))/(dist.shape[1]*dist.shape[2])
-            final.append(rfc)
+            #distance
+            #feature = hist.reshape(w, h, 36).transpose(2, 1, 0)
+            # dist = np.abs(feature - target)
+            # rfc = np.sum(dist,axis=(1,2))/(dist.shape[1]*dist.shape[2])
+            # final.append(rfc)
+
+            #origin
             # feature = hist.reshape(w, h, 36)
             # feature = np.sum(feature,axis=2)/36
             # feature = feature.reshape(-1)
             # final.append(feature)
+
+            # convolution
+            feature = hist.reshape(w, h, 36).transpose(2, 1, 0)
+            corelation = feature*target
+            feature = np.sum(corelation,axis=(1,2))
+            final.append(feature)
+            
+
+
             
 
         return final
