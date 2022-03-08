@@ -4,8 +4,12 @@ A project for CSE203B
 ./car.avi: sample testing case.
 
 ./main.py: Use this to run sample testing. It will open a opencv window and show the results.
-    -Features: Use -F or --feature to select which feature you wanna use. Availabel Choices: [resnet18, HOG]
+    -Features: Use -F or --feature to select which feature you wanna use. Availabel Choices: ['resnet18', 'HOG']
+    -Kernel: Use -K or --kernel to select which kernel you wanna use. Availabel Choices: ['linear’, ‘poly’, ‘rbf’,]
     -Quit: press q to exit the window
+    
+    E.G: Try 
+        python main.py --feature hog --kernel poly
     
 ./NNfeatures.py: contains the code all version of resnet model
 

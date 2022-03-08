@@ -6,9 +6,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Object Tracking')
     parser.add_argument('--feature', metavar='-F', type=str, default='resnet18',
                     help='Which feature is gonna use')
+    parser.add_argument('--kernel', metavar='-K', type=str, default='linear',
+                    help='Which feature is gonna use')
     args = parser.parse_args()
     cap = cv2.VideoCapture("./car.avi")
-    tracker = MyTracker()
+    tracker = MyTracker(model_name=args.feature, kernel=args.kernel)
     ok, frame = cap.read()
     if not ok:
         print("error reading video")

@@ -7,31 +7,38 @@ import matplotlib.pyplot as plt
 from sklearn.svm import SVR
 from sklearn.decomposition import PCA
 import torch
+from hog import HOG
+
 
 class TestTracker(Tracker):
-    def __init__(self, model_name='resnet18', device=torch.device('cpu'), name='ResNet18Tracker'):
+    def __init__(self, model_name='resnet18', kernel='linear', device=torch.device('cpu'), name='ResNet18Tracker', continuous=False):
         super(TestTracker, self).__init__(
             name=name,  # tracker name
             is_deterministic=True    # stochastic (False) or deterministic (True)
         )
         self.a=1
         if model_name == 'resnet18':
-            self.Resnet = NNfeatures('resnet18', device)
+            self.feature = NNfeatures('resnet18')
+        else:
+            self.feature = HOG()
         self.svrs = []
+        self.kernel = kernel
+        self.device = device
+        self.continuous = continuous
         
 
     def init(self, image, roi):
-        image = np.asarray(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image_h,image_w,_ = image.shape
         x1, y1, w, h = roi
-        cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1.5)
-        self.frame = self.Resnet.get_frame_feature([sub_image])[0]
+        cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1)
+        self.frame = self.feature.get_frame_feature([sub_image])[0]
 
         target = self.gaussian_peak(w,h)
         summation = np.max(target)
         target = target/summation
 
-        self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy)
+        self.train_x,self.train_y,debug = self.get_train_data(image,target,w,h,cx,cy, num=100)
         for i in range(len(self.train_x)):
             gx = np.random.randint(0,image_w*0.7)+image_w*0.15
             gy = np.random.randint(0,image_h*0.7)+image_h*0.15
@@ -45,11 +52,11 @@ class TestTracker(Tracker):
         
         # plt.imshow(train_x[0])
         # plt.show()
-        RFC = self.Resnet.get_feature(self.train_x,self.frame) #(36*256*14*14)
+        RFC = self.feature.get_feature(self.train_x,self.frame) #(36*256*14*14)
         # RFC = self.Resnet.get_feature2(train_x) #(36*256*14*14)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
-        svr = SVR(C=1, epsilon=0.2)
+        svr = SVR(C=1, epsilon=0.2, kernel=self.kernel)
         self.svrs.append(svr)
         self.svrs[-1].fit(RFC, np.array(self.train_y))
         
@@ -122,15 +129,14 @@ class TestTracker(Tracker):
 
 
     def update(self, image):
-        image = np.asarray(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         x1, y1, w, h = self.roi
-        cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1.5)
-        scale = [(0.85,0.85), (1,1),  (1.05, 1.05)]
+        scale = [(0.85,0.85),(0.95,0.95),(1,1),(1.05,1.05)]
         test_x = []
         roi_set = []
         for s in scale:
-            for i in range(50):
+            for i in range(25):
                 th,tw = int(h*s[0]),int(w*s[1])
                 n_x1 = self.gaussion_random(x1,tw/6)
                 n_y1 = self.gaussion_random(y1,th/6)
@@ -138,7 +144,7 @@ class TestTracker(Tracker):
                 test_x.append(sub_image)
                 roi_set.append((n_x1,n_y1,tw,th))
 
-        RFC = self.Resnet.get_feature(test_x,self.frame) #(36*256*14*14)
+        RFC = self.feature.get_feature(test_x,self.frame) #(36*256*14*14)
         # RFC = np.array(RFC)
         # pca = PCA(n_components=32)
         # RFC = pca.fit_transform(RFC)
@@ -148,7 +154,8 @@ class TestTracker(Tracker):
             result = 8/9 * result + self.svrs[k].predict(RFC)
         index = np.argmax(result)
         self.roi = roi_set[index]
-
+        if self.continuous:
+            self.init(image, self.roi)
         return self.roi
 
     def gaussian_peak(self, w, h):
