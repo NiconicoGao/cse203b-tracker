@@ -28,7 +28,7 @@ class TestTracker(Tracker):
         
 
     def init(self, image, roi):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = np.array(image)
         image_h,image_w,_ = image.shape
         x1, y1, w, h = roi
         cx, cy, sub_image = self.get_sub_image(image, x1, y1, w, h,scale=1)
@@ -129,8 +129,7 @@ class TestTracker(Tracker):
 
 
     def update(self, image):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
+        image = np.array(image)
         x1, y1, w, h = self.roi
         scale = [(0.85,0.85),(0.95,0.95),(1,1),(1.05,1.05)]
         test_x = []
@@ -154,8 +153,11 @@ class TestTracker(Tracker):
             result = 8/9 * result + self.svrs[k].predict(RFC)
         index = np.argmax(result)
         self.roi = roi_set[index]
-        if self.continuous:
-            self.init(image, self.roi)
+        if self.continuous and self.roi:
+            x1, y1, w, h = self.roi
+            if x1 > 0 and y1 > 0 and w > 0 and h > 0:
+                if y1 + h < image.shape[0] and x1 + w < image.shape[1]:
+                    self.init(image, self.roi)
         return self.roi
 
     def gaussian_peak(self, w, h):

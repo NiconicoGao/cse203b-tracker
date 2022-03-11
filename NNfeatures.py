@@ -8,7 +8,7 @@ class NNfeatures():
         self.device = device
         if model_name == 'resnet18':
             self.m = torchvision.models.resnet18(pretrained=True)
-        self.layer4 = torchvision.models._utils.IntermediateLayerGetter(self.m,{'layer3': 'feat2'})
+        self.layer4 = torchvision.models._utils.IntermediateLayerGetter(self.m,{'layer2': 'feat2'})
         self.layer4.to(self.device)
         self.preprocess = transforms.Compose([
             transforms.Resize(256),
